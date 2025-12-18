@@ -173,8 +173,7 @@ class CourtDetailScreen extends StatelessWidget {
                           ],
                   ),
 
-                  const Spacer(), // Dorong harga ke bawah
-                  // 3. FOOTER HARGA & TOMBOL (Fixed di bawah body)
+                  const Spacer(),
                   const Divider(),
                   const SizedBox(height: 10),
                   Row(
@@ -199,7 +198,7 @@ class CourtDetailScreen extends StatelessWidget {
                       ),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green, // Tombol Hijau
+                          backgroundColor: Colors.green,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 24,
@@ -236,7 +235,6 @@ class CourtDetailScreen extends StatelessWidget {
     );
   }
 
-  // Widget kecil untuk Fasilitas
   Widget _buildFacilityChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

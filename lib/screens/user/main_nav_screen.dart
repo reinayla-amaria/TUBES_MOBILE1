@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'booking_screen.dart'; // Halaman Pilih Venue (Daftar Lapangan)
 import 'chat_screen.dart';
+import 'profile_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
   const MainNavScreen({super.key});
@@ -16,10 +17,8 @@ class _MainNavScreenState extends State<MainNavScreen> {
   final List<Widget> _pages = [
     const HomeScreen(),
     const BookingScreen(),
-    const ChatScreen(), // Index 2: Placeholder Chat
-    const Center(
-      child: Text("Halaman Profile"),
-    ), // Index 3: Placeholder Profile
+    const ChatScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -27,7 +26,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
     const primaryBlue = Color(0xFF1565C0);
 
     return Scaffold(
-      // Body akan berubah sesuai _selectedIndex
       body: _pages[_selectedIndex],
 
       // Navigasi Bawah

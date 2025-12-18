@@ -3,48 +3,65 @@ import 'package:http/http.dart' as http;
 import '../models/court_model.dart';
 
 class ApiService {
-  // Ganti dengan IP Address Laptop Anda jika pakai Emulator (jangan 'localhost')
-  // Contoh: 'http://192.168.1.10/api_lapangin' atau URL hosting
-  static const String baseUrl = 'http://192.168.1.X/api';
+  // 1. HAPUS SPASI SETELAH http://
+  // Pastikan IP Address ini sesuai dengan laptop Anda saat ini (cek ipconfig)
+  static const String baseUrl = 'http://192.168.1.22/api_tubes';
 
-  // 1. GET Daftar Lapangan [cite: 473]
+  // --- GET DAFTAR LAPANGAN ---
   Future<List<Court>> getCourts() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/courts.php'));
+      // 2. SESUAIKAN NAMA FILE PHP (get_courts.php)
+      final response = await http.get(Uri.parse('$baseUrl/get_courts.php'));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body)['data'];
-        return data.map((json) => Court.fromJson(json)).toList();
+        // Parse respon: {"success": true, "data": [...]}
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+
+        if (jsonResponse['success'] == true) {
+          final List<dynamic> data = jsonResponse['data'];
+          return data.map((json) => Court.fromJson(json)).toList();
+        } else {
+          return []; // Kembalikan list kosong jika success false
+        }
       } else {
         throw Exception('Gagal memuat data lapangan');
       }
     } catch (e) {
-      throw Exception('Error Network: $e'); // Handle error network [cite: 475]
+      print("Error Get Courts: $e");
+      throw Exception('Error Network: $e');
     }
   }
 
-  // 2. POST Booking [cite: 474]
+  // --- POST BOOKING ---
   Future<bool> createBooking(
     String courtId,
     String date,
     String time,
     int duration,
+    double totalPrice, // 3. TAMBAHKAN PARAMETER INI
   ) async {
     try {
+      // 2. SESUAIKAN NAMA FILE PHP (create_booking.php)
       final response = await http.post(
-        Uri.parse('$baseUrl/booking.php'),
+        Uri.parse('$baseUrl/create_booking.php'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'court_id': courtId,
           'date': date,
           'time': time,
           'duration': duration,
-          'user_id': '1', // Hardcode dulu atau ambil dari AuthProvider
+          'total_price': totalPrice, // Kirim harga ke backend
+          'user_id':
+              '1', // Hardcode sementara (nanti ambil dari SharedPreference)
         }),
       );
 
+      print("Response Status: ${response.statusCode}");
+      print("Response Body: ${response.body}");
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return true;
+        final jsonResponse = json.decode(response.body);
+        return jsonResponse['success'] == true;
       } else {
         return false;
       }

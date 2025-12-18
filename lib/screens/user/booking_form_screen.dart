@@ -1,5 +1,3 @@
-// File: lib/screens/user/booking_form_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -17,9 +15,12 @@ class BookingFormScreen extends StatefulWidget {
 class _BookingFormScreenState extends State<BookingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _dateController = TextEditingController();
+
+  // Default value
   String _selectedTime = "08:00";
   int _duration = 1;
 
+  // Generate jam 08:00 - 22:00
   final List<String> _timeSlots = List.generate(
     15,
     (index) => "${(8 + index).toString().padLeft(2, '0')}:00",
@@ -28,6 +29,7 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
   @override
   Widget build(BuildContext context) {
     final bookingProv = Provider.of<BookingProvider>(context);
+
     final totalPrice = widget.court.pricePerHour * _duration;
 
     return Scaffold(
@@ -48,7 +50,6 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Input Tanggal
               TextFormField(
                 controller: _dateController,
                 readOnly: true,
@@ -66,17 +67,16 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                     lastDate: DateTime.now().add(const Duration(days: 30)),
                   );
                   if (picked != null) {
-                    setState(
-                      () => _dateController.text = DateFormat(
+                    setState(() {
+                      _dateController.text = DateFormat(
                         'yyyy-MM-dd',
-                      ).format(picked),
-                    );
+                      ).format(picked);
+                    });
                   }
                 },
               ),
               const SizedBox(height: 16),
 
-              // Input Jam & Durasi
               Row(
                 children: [
                   Expanded(
@@ -119,7 +119,6 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Total Harga
               Card(
                 color: Colors.blue[50],
                 child: Padding(
@@ -129,7 +128,11 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                     children: [
                       const Text("Total Estimasi:"),
                       Text(
-                        "Rp ${NumberFormat('#,###', 'id_ID').format(totalPrice)}",
+                        NumberFormat.currency(
+                          locale: 'id_ID',
+                          symbol: 'Rp ',
+                          decimalDigits: 0,
+                        ).format(totalPrice),
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 18,
@@ -154,12 +157,17 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                       ? null
                       : () async {
                           if (_formKey.currentState!.validate()) {
+
                             bool success = await bookingProv.createBooking(
                               widget.court.id,
                               DateTime.parse(_dateController.text),
                               _selectedTime,
                               _duration,
+                              widget
+                                  .court
+                                  .pricePerHour, 
                             );
+
                             if (success && mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
@@ -167,7 +175,18 @@ class _BookingFormScreenState extends State<BookingFormScreen> {
                                   backgroundColor: Colors.green,
                                 ),
                               );
-                              Navigator.pop(context);
+                              Navigator.pop(
+                                context,
+                              ); 
+                            } else if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Gagal: ${bookingProv.errorMessage}",
+                                  ),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
                           }
                         },

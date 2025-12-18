@@ -32,16 +32,19 @@ class BookingProvider with ChangeNotifier {
   }
 
   // Create Booking ke API
+  // PERBAIKAN: Tambahkan parameter pricePerHour untuk hitung total
   Future<bool> createBooking(
     String courtId,
     DateTime date,
     String time,
     int duration,
+    double pricePerHour, 
   ) async {
     _isLoading = true;
     notifyListeners();
 
-    // Format tanggal ke string yang diterima database (YYYY-MM-DD)
+    double totalPrice = pricePerHour * duration;
+
     String dateString = date.toIso8601String().split('T')[0];
 
     bool success = await _apiService.createBooking(
@@ -49,6 +52,7 @@ class BookingProvider with ChangeNotifier {
       dateString,
       time,
       duration,
+      totalPrice, 
     );
 
     _isLoading = false;

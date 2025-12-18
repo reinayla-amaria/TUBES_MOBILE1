@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
 import 'booking_screen.dart'; // Halaman Pilih Venue (Daftar Lapangan)
+import 'chat_screen.dart';
 
 class MainNavScreen extends StatefulWidget {
   const MainNavScreen({super.key});
@@ -10,13 +11,12 @@ class MainNavScreen extends StatefulWidget {
 }
 
 class _MainNavScreenState extends State<MainNavScreen> {
-  int _selectedIndex = 0; // Menyimpan status menu mana yang sedang aktif
+  int _selectedIndex = 0;
 
-  // Daftar Halaman yang akan ditampilkan sesuai menu yang dipilih
   final List<Widget> _pages = [
-    const HomeScreen(), // Index 0: Halaman Utama
-    const BookingScreen(), // Index 1: Halaman Booking (Pilih Venue)
-    const Center(child: Text("Halaman Chat")), // Index 2: Placeholder Chat
+    const HomeScreen(),
+    const BookingScreen(),
+    const ChatScreen(), // Index 2: Placeholder Chat
     const Center(
       child: Text("Halaman Profile"),
     ), // Index 3: Placeholder Profile

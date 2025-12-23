@@ -72,7 +72,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/images/logo_white.png', height: 35),
+                    Image.asset('assets/logo_white.png', height: 35),
                     const SizedBox(width: 10),
                     const Text(
                       "Lapangin.Aja",

@@ -31,9 +31,7 @@ class OnboardingScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
         child: Column(
           children: [
-            const Spacer(flex: 1), // Spacer agar gambar agak ke tengah
-            // 1. Gambar Ilustrasi (Menggunakan Network Image untuk contoh)
-            // Nanti ganti dengan: Image.asset('assets/images/onboarding.png')
+            const Spacer(flex: 1),
             Image.network(
               'https://img.freepik.com/free-vector/booking-calendar-appointment-man-with-big-schedule_23-2148498355.jpg?w=900',
               height: 300,

@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:image_picker/image_picker.dart';
 import '../auth/login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -10,9 +12,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Controller input
-  final TextEditingController _usernameController =
-      TextEditingController(); // BARU: Controller Username
+  final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
@@ -20,38 +20,107 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isEditing = false;
   bool _isLoading = true;
 
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
     _loadProfileData();
   }
 
-  // Load Data
   Future<void> _loadProfileData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      // Load Username (Default: mahasiswa_oke)
       _usernameController.text =
-          prefs.getString('user_username') ?? "mahasiswa_oke";
+          prefs.getString('user_username') ?? "";
       _nameController.text =
-          prefs.getString('user_name') ?? "Mahasiswa Teladan";
+          prefs.getString('user_name') ?? "";
       _emailController.text =
-          prefs.getString('user_email') ?? "mahasiswa@email.com";
-      _phoneController.text = prefs.getString('user_phone') ?? "08123456789";
+          prefs.getString('user_email') ?? "";
+      _phoneController.text = prefs.getString('user_phone') ?? "";
+
+      String? imagePath = prefs.getString('user_image');
+      if (imagePath != null && File(imagePath).existsSync()) {
+        _imageFile = File(imagePath);
+      }
+
       _isLoading = false;
     });
   }
 
-  // Simpan Data
+  Future<void> _pickImage() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        height: 150,
+        child: Column(
+          children: [
+            const Text(
+              "Ganti Foto Profil",
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildPickOption(
+                  Icons.camera_alt,
+                  "Kamera",
+                  ImageSource.camera,
+                ),
+                _buildPickOption(
+                  Icons.photo_library,
+                  "Galeri",
+                  ImageSource.gallery,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickOption(IconData icon, String label, ImageSource source) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(context); 
+        final XFile? pickedFile = await _picker.pickImage(source: source);
+
+        if (pickedFile != null) {
+          setState(() {
+            _imageFile = File(pickedFile.path);
+          });
+        }
+      },
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.blue[100],
+            child: Icon(icon, color: Colors.blue, size: 30),
+          ),
+          const SizedBox(height: 5),
+          Text(label),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveProfileData() async {
     setState(() => _isLoading = true);
 
     final prefs = await SharedPreferences.getInstance();
-    // Simpan Username
     await prefs.setString('user_username', _usernameController.text);
     await prefs.setString('user_name', _nameController.text);
     await prefs.setString('user_email', _emailController.text);
     await prefs.setString('user_phone', _phoneController.text);
+
+    if (_imageFile != null) {
+      await prefs.setString('user_image', _imageFile!.path);
+    }
 
     await Future.delayed(const Duration(seconds: 1));
 
@@ -116,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             onPressed: () {
               setState(() {
                 if (_isEditing) {
-                  _loadProfileData(); // Reset jika batal edit
+                  _loadProfileData();
                   _isEditing = false;
                 } else {
                   _isEditing = true;
@@ -132,7 +201,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               padding: const EdgeInsets.all(20),
               child: Column(
                 children: [
-                  // Foto Profil
                   Stack(
                     alignment: Alignment.bottomRight,
                     children: [
@@ -141,25 +209,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           shape: BoxShape.circle,
                           border: Border.all(color: primaryBlue, width: 3),
                         ),
-                        child: const CircleAvatar(
+                        child: CircleAvatar(
                           radius: 60,
                           backgroundColor: Colors.white,
-                          backgroundImage: AssetImage(
-                            'assets/images/logo_blue.png',
-                          ),
+
+                          backgroundImage: _imageFile != null
+                              ? FileImage(_imageFile!) as ImageProvider
+                              : const AssetImage('assets/logo_blue.png'),
                         ),
                       ),
+
                       if (_isEditing)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: const BoxDecoration(
-                            color: Colors.orange,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt,
-                            color: Colors.white,
-                            size: 20,
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(
+                              color: Colors.orange,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                           ),
                         ),
                     ],
@@ -167,9 +240,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 30),
 
-                  // --- FORM DATA ---
-
-                  // 1. Input Username (BARU)
+                  // Form Data
                   _buildTextField(
                     "Username",
                     _usernameController,
@@ -177,8 +248,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _isEditing,
                   ),
                   const SizedBox(height: 15),
-
-                  // 2. Input Nama
                   _buildTextField(
                     "Nama Lengkap",
                     _nameController,
@@ -186,8 +255,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _isEditing,
                   ),
                   const SizedBox(height: 15),
-
-                  // 3. Input Email
                   _buildTextField(
                     "Email",
                     _emailController,
@@ -195,8 +262,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _isEditing,
                   ),
                   const SizedBox(height: 15),
-
-                  // 4. Input Telepon
                   _buildTextField(
                     "Nomor Telepon",
                     _phoneController,
@@ -207,7 +272,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   const SizedBox(height: 30),
 
-                  // Tombol Aksi
                   if (_isEditing)
                     SizedBox(
                       width: double.infinity,

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/court_model.dart';
-import 'booking_form_screen.dart';
+// Import halaman pilih jadwal (Bukan PaymentScreen)
+import 'booking_schedule_screen.dart';
 
 class CourtDetailScreen extends StatelessWidget {
   final Court court;
@@ -10,7 +11,6 @@ class CourtDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Format mata uang
     final currencyFormatter = NumberFormat.currency(
       locale: 'id_ID',
       symbol: 'Rp ',
@@ -18,15 +18,15 @@ class CourtDetailScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      backgroundColor: Colors.white, // Background dasar
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. HEADER GAMBAR (Full width di atas)
+          // 1. HEADER GAMBAR
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 300, // Tinggi gambar header
+            height: 300,
             child: Image.network(
               court.imageUrl,
               fit: BoxFit.cover,
@@ -43,7 +43,7 @@ class CourtDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // Tombol Back di atas gambar (SafeArea)
+          // Tombol Back
           Positioned(
             top: 40,
             left: 20,
@@ -56,9 +56,9 @@ class CourtDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. BODY CARD (Melengkung naik ke atas gambar)
+          // 2. BODY CARD
           Positioned.fill(
-            top: 250, // Mulai menutupi gambar dari posisi ini
+            top: 250,
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
               decoration: const BoxDecoration(
@@ -78,7 +78,7 @@ class CourtDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nama Lapangan & Rating
+                  // Nama & Rating
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -93,7 +93,6 @@ class CourtDetailScreen extends StatelessWidget {
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      // PERBAIKAN: Struktur Container Rating yang benar
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -134,7 +133,7 @@ class CourtDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Alamat dengan Icon Pin
+                  // Alamat
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -157,7 +156,7 @@ class CourtDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Fasilitas (Chips)
+                  // Fasilitas
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -176,6 +175,8 @@ class CourtDetailScreen extends StatelessWidget {
                   const Spacer(),
                   const Divider(),
                   const SizedBox(height: 10),
+
+                  // FOOTER HARGA & TOMBOL
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -209,23 +210,23 @@ class CourtDetailScreen extends StatelessWidget {
                           ),
                         ),
                         onPressed: () {
-                          // Navigasi ke Form Booking
+                          // --- NAVIGASI KE JADWAL DULU (ALUR BENAR) ---
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  BookingFormScreen(court: court),
+                                  BookingScheduleScreen(court: court),
                             ),
                           );
                         },
                         child: const Text(
-                          "Cek Lapangan",
+                          "Pilih Jadwal",
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 30), // Padding bawah aman
+                  const SizedBox(height: 30),
                 ],
               ),
             ),

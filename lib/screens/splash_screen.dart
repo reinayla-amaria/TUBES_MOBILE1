@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'onboarding_screen.dart'; // Pastikan import ini ada
+import 'onboarding_screen.dart'; 
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -28,7 +28,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background Gradient Biru
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -37,24 +36,22 @@ class _SplashScreenState extends State<SplashScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF1565C0), // Biru Tua
-              Color(0xFF42A5F5), // Biru Muda
+              Color(0xFF1565C0), 
+              Color(0xFF42A5F5), 
             ],
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // LOGO PUTIH
-            // Pastikan Anda sudah menyimpan file sebagai logo_white.png
+
             Image.asset(
               'assets/logo_white.png',
-              width: 200, // Sesuaikan ukuran
+              width: 200, 
             ),
 
             const SizedBox(height: 50),
 
-            // Loading Indicator Putih
             const CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),

@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Wajib untuk format tanggal Indo
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// --- IMPORTS ---
 import 'providers/booking_provider.dart';
-
-// PERBAIKAN: Pastikan path ini benar (sesuai instruksi sebelumnya ada di lib/screens/splash_screen.dart)
 import 'screens/splash_screen.dart';
 
 void main() async {
-  // 1. Pastikan binding Flutter terinisialisasi sebelum kode lain
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 2. Inisialisasi format tanggal (Locale Indonesia)
+
+  await Supabase.initialize(
+    url: 'https://rhswbmovrttnufodyqsb.supabase.co', 
+    anonKey: 'sb_publishable_CAVki265USFSRxV1GIevTw_bXu6oyDC', 
+  );
+
   await initializeDateFormatting('id_ID', null);
 
   runApp(const MyApp());
@@ -23,25 +25,20 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 3. MultiProvider untuk mendaftarkan semua State Management
     return MultiProvider(
       providers: [
-        // Daftarkan BookingProvider agar bisa diakses di seluruh aplikasi
         ChangeNotifierProvider(create: (_) => BookingProvider()),
-
-        // Tambahkan Provider lain di sini jika ada (misal AuthProvider)
-        // ChangeNotifierProvider(create: (_) => AuthProvider()),
       ],
       child: MaterialApp(
         title: 'Lapangin.Aja',
-        debugShowCheckedModeBanner: false, // Hilangkan banner debug
-        // 4. Tema Aplikasi Global
+        debugShowCheckedModeBanner: false,
+
         theme: ThemeData(
           primarySwatch: Colors.blue,
-          useMaterial3: true, // Gunakan desain Material 3 yang lebih modern
+          useMaterial3: true,
           appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFF1565C0), // Biru tua khas Lapangin
-            foregroundColor: Colors.white, // Teks putih
+            backgroundColor: Color(0xFF1565C0), 
+            foregroundColor: Colors.white,
             centerTitle: true,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
@@ -55,8 +52,6 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // 5. Halaman Awal
-        // Aplikasi dimulai dari Splash Screen
         home: const SplashScreen(),
       ),
     );

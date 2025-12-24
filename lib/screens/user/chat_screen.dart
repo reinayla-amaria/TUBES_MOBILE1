@@ -12,7 +12,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  // Model Data Pesan Sederhana
   final List<Map<String, dynamic>> _messages = [
     {
       "text": "Halo! Selamat datang di Lapangin.Aja. Ada yang bisa kami bantu?",
@@ -23,10 +22,8 @@ class _ChatScreenState extends State<ChatScreen> {
     },
   ];
 
-  // Warna Utama
   final Color primaryBlue = const Color(0xFF1565C0);
 
-  // Fungsi Kirim Pesan
   void _sendMessage() {
     if (_messageController.text.trim().isEmpty) return;
 
@@ -41,14 +38,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _messageController.clear();
     _scrollToBottom();
 
-    // Simulasi Balasan Admin (Dummy)
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
         setState(() {
           _messages.add({
             "text":
                 "Terima kasih telah menghubungi kami. Admin sedang mengecek pesan Anda.",
-            "isUser": false, // Ini pesan dari Admin
+            "isUser": false, 
             "time": DateFormat('HH:mm').format(DateTime.now()),
           });
         });
@@ -188,7 +184,6 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           ),
 
-          // INPUT FIELD
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(

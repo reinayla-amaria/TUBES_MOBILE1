@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Wajib untuk format tanggal
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/court_model.dart';
 import 'payment_screen.dart';
 
@@ -12,21 +14,83 @@ class BookingScheduleScreen extends StatefulWidget {
 
 class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
   // --- STATE VARIABLES ---
-  String? _selectedField;
+  String? _selectedField; // Nama lengkap (untuk logika)
   String? _selectedTime;
-  int? _selectedDate; // Menyimpan tanggal yang dipilih (misal: 10)
+  DateTime? _selectedDate;
+  DateTime _focusedMonth = DateTime.now();
 
-  // Data Dummy untuk Dropdown
-  final List<String> fieldList = ['Lapangan 1', 'Lapangan 2', 'Lapangan 3'];
+  // List Lapangan (Dari Supabase)
+  List<Court> _availableCourts = [];
+  List<String> _fieldNames = [];
+  bool _isLoadingCourts = true;
+
+  // Data Waktu (Bisa disesuaikan)
   final List<String> timeList = [
     '08:00 - 09:00',
     '09:00 - 10:00',
     '10:00 - 11:00',
     '16:00 - 17:00',
     '19:00 - 20:00',
+    '20:00 - 21:00',
   ];
 
-  // Cek apakah semua form sudah diisi
+  @override
+  void initState() {
+    super.initState();
+    // Set default awal
+    _selectedField = widget.court.name;
+    _fetchSiblingCourts();
+  }
+
+  // --- AMBIL DATA LAPANGAN SATU GEDUNG ---
+  Future<void> _fetchSiblingCourts() async {
+    try {
+      // Ambil "Kelapa Gading" dari "Kelapa Gading - Lapangan 1"
+      String venueName = widget.court.name.split(' - ')[0].trim();
+
+      final data = await Supabase.instance.client
+          .from('courts')
+          .select()
+          .ilike('name', '$venueName%') // Cari yang namanya mirip
+          .order('name', ascending: true);
+
+      final List<Court> fetchedCourts = (data as List)
+          .map((json) => Court.fromJson(json))
+          .toList();
+
+      setState(() {
+        _availableCourts = fetchedCourts;
+        _fieldNames = fetchedCourts.map((c) => c.name).toList();
+        _isLoadingCourts = false;
+
+        // Pastikan pilihan awal valid
+        if (!_fieldNames.contains(_selectedField) && _fieldNames.isNotEmpty) {
+          _selectedField = _fieldNames.first;
+        }
+      });
+    } catch (e) {
+      debugPrint("Error fetching courts: $e");
+      setState(() {
+        _isLoadingCourts = false;
+        _fieldNames = [widget.court.name];
+      });
+    }
+  }
+
+  // Helper: Ambil URL Gambar sesuai lapangan yang dipilih
+  String _getCurrentCourtImage() {
+    if (_availableCourts.isEmpty) return widget.court.imageUrl;
+    try {
+      // Cari court object yang namanya cocok dengan dropdown
+      return _availableCourts
+          .firstWhere((c) => c.name == _selectedField)
+          .imageUrl;
+    } catch (e) {
+      return widget.court.imageUrl;
+    }
+  }
+
+  // Validasi Form
   bool get _isFormValid =>
       _selectedField != null && _selectedTime != null && _selectedDate != null;
 
@@ -35,11 +99,17 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
     const primaryBlue = Color(0xFF1565C0);
     const accentGreen = Color(0xFF00C853);
 
+    // LOGIKA PEMOTONGAN NAMA UNTUK TAMPILAN
+    // Jika _selectedField ada, potong stringnya. Jika tidak, pakai data awal.
+    String displayVenueName = _selectedField != null
+        ? _selectedField!.split(' - ')[0].trim()
+        : widget.court.name.split(' - ')[0].trim();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // 1. HEADER
+          // 1. HEADER (Logo Only)
           Container(
             padding: const EdgeInsets.only(
               top: 50,
@@ -57,24 +127,41 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
             child: Column(
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Image.asset('assets/logo_white.png', height: 35),
-                    const SizedBox(width: 10),
-                    const Text(
-                      "Lapangin.Aja",
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.white,
+                    // Tombol Back
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                        padding: EdgeInsets.zero,
                       ),
                     ),
+
+                    // Logo di Tengah
+                    Expanded(
+                      child: Center(
+                        child: Image.asset(
+                          'assets/logo_white.png',
+                          height: 40,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 40), // Spacer penyeimbang
                   ],
                 ),
-                const SizedBox(height: 20),
+
+                const SizedBox(height: 25),
+
+                // Search Bar Hiasan
                 TextField(
-                  readOnly: true, // Search bar hiasan
+                  readOnly: true,
                   decoration: InputDecoration(
                     hintText: "cari lapangan",
                     hintStyle: TextStyle(
@@ -98,7 +185,7 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
             ),
           ),
 
-          // 2. KONTEN
+          // 2. KONTEN SCROLLABLE
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -110,52 +197,80 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 5),
+
+                  // Tampilkan HANYA Nama Venue (Misal: "Kelapa Gading")
                   Text(
-                    widget.court.name,
+                    displayVenueName,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w500,
+                      color: Colors.grey,
                     ),
                   ),
-
                   const SizedBox(height: 20),
 
-                  // Info & Dropdown
+                  // Area Gambar & Dropdown
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // GAMBAR LAPANGAN (DENGAN FALLBACK)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          widget.court.imageUrl,
-                          width: 150,
-                          height: 110,
-                          fit: BoxFit.cover,
-                          errorBuilder: (ctx, _, __) => Container(
-                            width: 150,
-                            height: 110,
-                            color: Colors.grey[300],
+                        child: SizedBox(
+                          width: 140,
+                          height: 100,
+                          child: Image.network(
+                            _getCurrentCourtImage(), // URL Dinamis
+                            fit: BoxFit.cover,
+
+                            // Loading State
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              );
+                            },
+
+                            // Error State (Fallback ke Asset)
+                            errorBuilder: (context, error, stackTrace) {
+                              return Image.asset(
+                                'assets/lapangan.png', // Pastikan file ini ada
+                                fit: BoxFit.cover,
+                              );
+                            },
                           ),
                         ),
                       ),
+
                       const SizedBox(width: 16),
+
+                      // Dropdown Area
                       Expanded(
                         child: Column(
                           children: [
-                            _buildDropdown(
-                              "Lapangan",
-                              fieldList,
-                              _selectedField,
-                              (val) {
-                                setState(() => _selectedField = val);
-                              },
-                            ),
+                            // Dropdown Pilih Lapangan
+                            _isLoadingCourts
+                                ? const LinearProgressIndicator()
+                                : _buildDropdown(
+                                    "Pilih Lapangan",
+                                    _fieldNames,
+                                    _selectedField,
+                                    (val) {
+                                      setState(() => _selectedField = val);
+                                    },
+                                  ),
+
                             const SizedBox(height: 10),
-                            _buildDropdown("Waktu", timeList, _selectedTime, (
-                              val,
-                            ) {
-                              setState(() => _selectedTime = val);
-                            }),
+
+                            // Dropdown Pilih Waktu
+                            _buildDropdown(
+                              "Pilih Waktu",
+                              timeList,
+                              _selectedTime,
+                              (val) => setState(() => _selectedTime = val),
+                            ),
                           ],
                         ),
                       ),
@@ -164,45 +279,40 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
 
                   const SizedBox(height: 30),
 
-                  // KALENDER INTERAKTIF
-                  _buildInteractiveCalendar(),
+                  // KALENDER DINAMIS
+                  _buildDynamicCalendar(),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 30),
 
-                  // TOMBOL BOOKING (Dengan Validasi)
+                  // Tombol Booking
                   Align(
                     alignment: Alignment.centerRight,
                     child: SizedBox(
-                      width: 180, // Lebar tombol
-                      height: 45,
+                      width: double.infinity,
+                      height: 50,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          // Jika valid warna Hijau/Biru, jika tidak Abu-abu
                           backgroundColor: _isFormValid
                               ? accentGreen
                               : Colors.grey[400],
                           foregroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                            borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: _isFormValid ? 2 : 0,
                         ),
-                        // Jika tidak valid, onPressed null (tombol mati)
-                        onPressed: _isFormValid
-                            ? () {
-                                _processBooking();
-                              }
-                            : null,
+                        onPressed: _isFormValid ? _processBooking : null,
                         child: const Text(
                           "Booking Sekarang",
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -212,21 +322,29 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
     );
   }
 
-  // Fungsi Navigasi ke Pembayaran
+  // Fungsi Proses Booking
   void _processBooking() {
-    // Hitung total harga (Dummy logic: 1 jam)
-    double total = widget.court.pricePerHour * 1;
+    Court selectedCourtObj = widget.court;
+    if (_availableCourts.isNotEmpty) {
+      try {
+        selectedCourtObj = _availableCourts.firstWhere(
+          (c) => c.name == _selectedField,
+        );
+      } catch (_) {}
+    }
 
-    // Kirim data ke Payment Screen
+    double total = selectedCourtObj.pricePerHour * 1;
+    // Format tanggal ke String YYYY-MM-DD
+    String formattedDate = DateFormat('yyyy-MM-dd').format(_selectedDate!);
+
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PaymentScreen(
-          // Buat Booking ID dummy atau ambil dari backend nanti
           bookingId:
               "BOOK-${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}",
-          court: widget.court,
-          date: "2023-12-$_selectedDate",
+          court: selectedCourtObj,
+          date: formattedDate,
           time: _selectedTime!,
           totalPrice: total,
         ),
@@ -242,11 +360,11 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
     Function(String?) onChanged,
   ) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       height: 45,
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Colors.black54),
+        border: Border.all(color: Colors.grey.shade400),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -257,15 +375,19 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
             style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: Colors.black87,
             ),
           ),
           value: value,
-          icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
-          items: items.map((String item) {
+          icon: const Icon(Icons.arrow_drop_down, color: Colors.black54),
+          items: items.toSet().map((String item) {
             return DropdownMenuItem<String>(
               value: item,
-              child: Text(item, style: const TextStyle(fontSize: 13)),
+              child: Text(
+                item,
+                style: const TextStyle(fontSize: 13),
+                overflow: TextOverflow.ellipsis,
+              ),
             );
           }).toList(),
           onChanged: onChanged,
@@ -274,44 +396,87 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
     );
   }
 
-  // Widget Kalender (Bisa Diklik)
-  Widget _buildInteractiveCalendar() {
-    final List<String> days = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  // Widget Kalender Dinamis
+  Widget _buildDynamicCalendar() {
+    final int year = _focusedMonth.year;
+    final int month = _focusedMonth.month;
+    final int daysInMonth = DateTime(year, month + 1, 0).day;
+    final int firstWeekdayOfMonth = DateTime(year, month, 1).weekday;
 
-    // Data visual kalender
-    final List<int> dates = [
-      30, // Prev Month
-      1, 2, 3, 4, 5, 6,
-      7, 8, 9, 10, 11, 12, 13,
-      14, 15, 16, 17, 18, 19, 20,
-      21, 22, 23, 24, 25, 26, 27,
-      28, 29, 30, 31,
-      1, 2, 3, // Next Month
-    ];
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    final List<String> dayHeaders = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
+    final List<DateTime?> calendarDays = List.generate(
+      firstWeekdayOfMonth - 1,
+      (index) => null,
+    );
+
+    for (int i = 1; i <= daysInMonth; i++) {
+      calendarDays.add(DateTime(year, month, i));
+    }
 
     return Container(
       decoration: BoxDecoration(
+        color: Colors.white,
         border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
         children: [
+          // Header Bulan
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    if (_focusedMonth.isAfter(
+                      DateTime(today.year, today.month),
+                    )) {
+                      setState(() {
+                        _focusedMonth = DateTime(year, month - 1);
+                      });
+                    }
+                  },
+                ),
+                Text(
+                  DateFormat('MMMM yyyy', 'id_ID').format(_focusedMonth),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: () {
+                    setState(() {
+                      _focusedMonth = DateTime(year, month + 1);
+                    });
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+
           // Header Hari
           Row(
-            children: days
+            children: dayHeaders
                 .map(
                   (day) => Expanded(
                     child: Container(
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: Colors.grey.shade300),
-                          right: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
+                      decoration: BoxDecoration(color: Colors.grey[50]),
                       child: Text(
                         day,
-                        style: const TextStyle(color: Colors.grey),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -323,56 +488,59 @@ class _BookingScheduleScreenState extends State<BookingScheduleScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: dates.length,
+            itemCount: calendarDays.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 7,
-              childAspectRatio: 1.2,
+              childAspectRatio: 1.0,
             ),
             itemBuilder: (context, index) {
-              final date = dates[index];
+              final date = calendarDays[index];
 
-              // Logika visual sederhana untuk membedakan bulan ini dan bulan lain
-              bool isCurrentMonth = index > 0 && index <= 31;
-              bool isSelected = isCurrentMonth && _selectedDate == date;
+              if (date == null) return const SizedBox();
+
+              bool isPastDate = date.isBefore(today);
+              bool isSelected =
+                  _selectedDate != null &&
+                  date.year == _selectedDate!.year &&
+                  date.month == _selectedDate!.month &&
+                  date.day == _selectedDate!.day;
 
               return InkWell(
-                onTap: isCurrentMonth
-                    ? () {
+                onTap: isPastDate
+                    ? null
+                    : () {
                         setState(() {
-                          _selectedDate = date; // Set tanggal yang dipilih
+                          _selectedDate = date;
                         });
-                      }
-                    : null,
+                      },
                 child: Container(
                   decoration: BoxDecoration(
-                    border: Border(
-                      right: BorderSide(color: Colors.grey.shade300),
-                      bottom: BorderSide(color: Colors.grey.shade300),
-                    ),
+                    color: isSelected ? Colors.blue[50] : null,
+                    border: Border.all(color: Colors.grey.shade100),
                   ),
                   child: Center(
                     child: Container(
-                      width: 30,
-                      height: 30,
+                      width: 32,
+                      height: 32,
                       decoration: isSelected
-                          ? BoxDecoration(
+                          ? const BoxDecoration(
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.blue,
-                                width: 1.5,
-                              ),
+                              color: Colors.blue,
                             )
                           : null,
                       alignment: Alignment.center,
                       child: Text(
-                        "$date",
+                        "${date.day}",
                         style: TextStyle(
-                          color: !isCurrentMonth
+                          color: isPastDate
                               ? Colors.grey[300]
-                              : (isSelected ? Colors.blue : Colors.black87),
+                              : (isSelected ? Colors.white : Colors.black87),
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
+                          decoration: isPastDate
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
                       ),
                     ),

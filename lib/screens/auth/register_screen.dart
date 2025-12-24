@@ -32,16 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   height: 80,
                   fit: BoxFit.contain,
                 ),
-                const SizedBox(height: 10),
-                const Text(
-                  "Lapangin.Aja",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF1565C0),
-                    letterSpacing: 1.2,
-                  ),
-                ),
+                const SizedBox(height: 10), // Corrected placement
 
                 const SizedBox(height: 40),
 
@@ -175,11 +166,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 10),
                 // Icon Google (Placeholder Icon)
-                const Icon(
-                  Icons.g_mobiledata,
-                  size: 40,
-                  color: Colors.red,
-                ), // Atau ganti Image.asset logo google
+                const Icon(Icons.g_mobiledata, size: 40, color: Colors.red),
 
                 const SizedBox(height: 30),
 

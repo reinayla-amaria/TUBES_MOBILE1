@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/court_model.dart';
-// Import halaman pilih jadwal (Bukan PaymentScreen)
 import 'booking_schedule_screen.dart';
 
 class CourtDetailScreen extends StatelessWidget {
@@ -17,33 +16,41 @@ class CourtDetailScreen extends StatelessWidget {
       decimalDigits: 0,
     );
 
+    String venueNameOnly = court.name.split(' - ')[0].trim();
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
         children: [
-          // 1. HEADER GAMBAR
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: 300,
             child: Image.network(
-              court.imageUrl,
+              court.imageUrl, 
               fit: BoxFit.cover,
-              errorBuilder: (ctx, _, __) => Container(
-                color: Colors.grey[300],
-                child: const Center(
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: Colors.grey,
+              
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.grey[200],
+                  child: const Center(
+                    child: CircularProgressIndicator(),
                   ),
-                ),
-              ),
+                );
+              },
+
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  'assets/lapangan.png', 
+                  fit: BoxFit.cover,
+                );
+              },
             ),
           ),
 
-          // Tombol Back
+          // Tombol Back (Mengambang)
           Positioned(
             top: 40,
             left: 20,
@@ -56,9 +63,8 @@ class CourtDetailScreen extends StatelessWidget {
             ),
           ),
 
-          // 2. BODY CARD
           Positioned.fill(
-            top: 250,
+            top: 250, 
             child: Container(
               padding: const EdgeInsets.fromLTRB(24, 30, 24, 0),
               decoration: const BoxDecoration(
@@ -78,13 +84,13 @@ class CourtDetailScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nama & Rating
+                  // Nama Venue & Rating
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: Text(
-                          court.name,
+                          venueNameOnly,
                           style: const TextStyle(
                             fontSize: 22,
                             fontWeight: FontWeight.bold,
@@ -137,11 +143,7 @@ class CourtDetailScreen extends StatelessWidget {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.red,
-                        size: 18,
-                      ),
+                      const Icon(Icons.location_on, color: Colors.red, size: 18),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
@@ -156,14 +158,19 @@ class CourtDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
-                  // Fasilitas
+                  // Fasilitas (Chips)
+                  const Text(
+                    "Fasilitas",
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 10),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: court.facilities.isNotEmpty
                         ? court.facilities
-                              .map((fas) => _buildFacilityChip(fas))
-                              .toList()
+                            .map((fas) => _buildFacilityChip(fas))
+                            .toList()
                         : [
                             const Text(
                               "- Tidak ada data fasilitas -",
@@ -176,57 +183,58 @@ class CourtDetailScreen extends StatelessWidget {
                   const Divider(),
                   const SizedBox(height: 10),
 
-                  // FOOTER HARGA & TOMBOL
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Harga per-Jam",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                          Text(
-                            currencyFormatter.format(court.pricePerHour),
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red[700],
+                  // FOOTER: Harga & Tombol
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Harga per-Jam",
+                              style: TextStyle(fontSize: 12, color: Colors.grey),
+                            ),
+                            Text(
+                              currencyFormatter.format(court.pricePerHour),
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green, // Warna Hijau Tombol
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 24,
+                              vertical: 12,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    BookingScheduleScreen(court: court),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Pilih Jadwal",
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
-                        onPressed: () {
-                          // --- NAVIGASI KE JADWAL DULU (ALUR BENAR) ---
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  BookingScheduleScreen(court: court),
-                            ),
-                          );
-                        },
-                        child: const Text(
-                          "Pilih Jadwal",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 30),
                 ],
               ),
             ),
@@ -236,6 +244,7 @@ class CourtDetailScreen extends StatelessWidget {
     );
   }
 
+  // Widget Kecil untuk Fasilitas
   Widget _buildFacilityChip(String label) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

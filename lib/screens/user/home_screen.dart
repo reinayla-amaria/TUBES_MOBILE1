@@ -2,13 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-// Import Provider & Model
 import '../../providers/booking_provider.dart';
 import '../../models/court_model.dart';
-import '../../models/booking_models.dart';
-
-// Import Halaman Tujuan
-import 'court_detail_screen.dart'; // Navigasi ke Detail dulu
+import '../../models/booking_models.dart'; // Ensure this matches your filename
+import 'court_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,25 +17,27 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   String? _userName;
 
+  // Search Variables
+  String _searchQuery = "";
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
     _loadData();
   }
 
-  // Fungsi untuk memuat data lapangan & jadwal user
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getString('user_id'); // Ambil ID user yang login
+    final userId = prefs.getString('user_id');
     final name = prefs.getString('user_name');
 
     if (mounted) {
       setState(() => _userName = name);
-
-      // 1. Ambil Data Lapangan
+      // Fetch Courts Data
       Provider.of<BookingProvider>(context, listen: false).fetchCourts();
 
-      // 2. Ambil Data Jadwal (Jika user sudah login)
+      // Fetch User Bookings if logged in
       if (userId != null) {
         Provider.of<BookingProvider>(
           context,
@@ -54,16 +53,24 @@ class _HomeScreenState extends State<HomeScreen> {
     final List<Court> allCourts = bookingProv.courts;
     final List<Booking> myBookings = bookingProv.bookings;
 
-    // Filter Nama Venue Unik (Agar tidak duplikat di Home)
+    // --- SEARCH FILTER LOGIC ---
     final Set<String> seenVenues = {};
     final List<Court> uniqueVenues = [];
+
     for (var court in allCourts) {
       String venueName = court.name.split(' - ')[0].trim();
-      if (!seenVenues.contains(venueName)) {
+
+      // Check if venue name matches search query
+      bool matchesSearch = venueName.toLowerCase().contains(
+        _searchQuery.toLowerCase(),
+      );
+
+      if (!seenVenues.contains(venueName) && matchesSearch) {
         seenVenues.add(venueName);
         uniqueVenues.add(court);
       }
     }
+    // ----------------------------
 
     const primaryBlue = Color(0xFF1565C0);
 
@@ -71,7 +78,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
-          // 1. HEADER
+          // 1. HEADER (Logo, Profile, Search)
           Container(
             padding: const EdgeInsets.only(
               top: 50,
@@ -87,34 +94,65 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Image.asset('assets/logo_white.png', height: 30),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Lapangin.Aja",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.white,
+                    // LOGO ONLY (Text Removed)
+                    Image.asset('assets/logo_white.png', height: 40),
+
+                    // PROFILE PICTURE
+                    GestureDetector(
+                      onTap: () {
+                        // Navigate to profile page logic here
+                        print("Profile clicked");
+                      },
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                          image: const DecorationImage(
+                            // Ensure this filename matches your asset exactly
+                            image: AssetImage(
+                              'assets/anime 1.png',
+                            ),
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                // SEARCH BAR
                 TextField(
+                  controller: _searchController,
+                  onChanged: (value) {
+                    setState(() {
+                      _searchQuery = value;
+                    });
+                  },
                   decoration: InputDecoration(
-                    hintText: "cari lapangan",
+                    hintText: "Cari nama lapangan...",
                     hintStyle: TextStyle(
                       color: Colors.grey[500],
                       fontStyle: FontStyle.italic,
                     ),
                     fillColor: Colors.white,
                     filled: true,
-                    suffixIcon: const Icon(Icons.search, color: Colors.black),
+                    prefixIcon: const Icon(Icons.search, color: Colors.black),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, color: Colors.grey),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() => _searchQuery = "");
+                            },
+                          )
+                        : null,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 20,
                       vertical: 12,
@@ -129,30 +167,36 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
-          // 2. BODY KONTEN
+          // 2. SCROLLABLE CONTENT
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPromoBanner(),
-                  const SizedBox(height: 25),
+                  // Hide banner when searching to focus on results
+                  if (_searchQuery.isEmpty) ...[
+                    _buildPromoBanner(),
+                    const SizedBox(height: 25),
+                  ],
 
-                  // --- SECTION 1: LAPANGAN TERDEKAT ---
+                  // --- SECTION 1: NEARBY COURTS ---
                   const Text(
-                    "Lapangan Terdekat",
+                    "Daftar Lapangan",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 15),
 
-                  // List Horizontal
                   SizedBox(
                     height: 270,
                     child: bookingProv.isLoading
                         ? const Center(child: CircularProgressIndicator())
                         : uniqueVenues.isEmpty
-                        ? const Center(child: Text("Belum ada data lapangan."))
+                        ? Center(
+                            child: Text(
+                              "Lapangan '$_searchQuery' tidak ditemukan.",
+                            ),
+                          )
                         : ListView.builder(
                             scrollDirection: Axis.horizontal,
                             itemCount: uniqueVenues.length,
@@ -166,38 +210,42 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                   ),
 
-                  const SizedBox(height: 25),
+                  // Hide schedule when searching
+                  if (_searchQuery.isEmpty) ...[
+                    const SizedBox(height: 25),
 
-                  // --- SECTION 2: JADWAL KAMU (DINAMIS) ---
-                  const Text(
-                    "Jadwal Kamu",
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-
-                  if (myBookings.isEmpty)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
+                    // --- SECTION 2: YOUR SCHEDULE ---
+                    const Text(
+                      "Jadwal Kamu",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: const Text(
-                        "Belum ada jadwal booking.",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  else
-                    // Menampilkan 3 jadwal terbaru saja
-                    Column(
-                      children: myBookings
-                          .take(3)
-                          .map((booking) => _buildScheduleCard(booking))
-                          .toList(),
                     ),
+                    const SizedBox(height: 10),
 
-                  const SizedBox(height: 50), // Spasi bawah tambahan
+                    if (myBookings.isEmpty)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Text(
+                          "Belum ada jadwal booking.",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      )
+                    else
+                      Column(
+                        children: myBookings
+                            .take(3)
+                            .map((booking) => _buildScheduleCard(booking))
+                            .toList(),
+                      ),
+                    const SizedBox(height: 50),
+                  ],
                 ],
               ),
             ),
@@ -207,7 +255,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET CARD LAPANGAN ---
+  // --- WIDGET HELPER: Court Card with Image Fallback ---
   Widget _buildHorizontalCourtCard(
     BuildContext context,
     Court court,
@@ -233,7 +281,6 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Gambar & Info
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
             child: Column(
@@ -270,16 +317,39 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
 
+          // IMAGE CONTAINER WITH FALLBACK
           Expanded(
             child: Container(
               margin: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
                 color: Colors.grey[200],
-                image: DecorationImage(
-                  image: NetworkImage(court.imageUrl),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.network(
+                  court.imageUrl,
                   fit: BoxFit.cover,
-                  onError: (_, __) {},
+                  width: double.infinity,
+                  // Loading Indicator
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  },
+                  // Fallback Image on Error
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.asset(
+                      'assets/lapangan.png', // Make sure this asset exists
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                    );
+                  },
                 ),
               ),
             ),
@@ -287,7 +357,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
           const SizedBox(height: 8),
 
-          // Tombol Lihat Lapangan
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             child: SizedBox(
@@ -303,7 +372,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.zero,
                 ),
                 onPressed: () {
-                  // PERBAIKAN: Navigasi ke CourtDetailScreen (Halaman Rating/Detail)
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -323,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET JADWAL DINAMIS (PERBAIKAN UTAMA) ---
+  // --- WIDGET HELPER: Schedule Card ---
   Widget _buildScheduleCard(Booking booking) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -332,7 +400,6 @@ class _HomeScreenState extends State<HomeScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          // Warna border beda kalau status Pending/Lunas
           color: booking.status == 'Lunas'
               ? Colors.green.shade200
               : Colors.orange.shade200,
@@ -352,7 +419,6 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Nama Lapangan
               Expanded(
                 child: Text(
                   booking.courtName,
@@ -363,7 +429,6 @@ class _HomeScreenState extends State<HomeScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              // Badge Status
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
@@ -384,7 +449,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           const SizedBox(height: 8),
-          // Tanggal & Waktu
           Row(
             children: [
               const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
@@ -401,7 +465,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // --- WIDGET BANNER PROMO ---
+  // --- WIDGET HELPER: Promo Banner ---
   Widget _buildPromoBanner() {
     return Container(
       width: double.infinity,
@@ -423,10 +487,10 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             width: 80,
             height: 100,
-            child: Icon(
-              Icons.sports_handball,
-              size: 80,
-              color: Colors.red[800],
+            // Updated to use asset image instead of icon
+            child: Image.asset(
+              'assets/anime 1.png', // Ensure this matches your asset name
+              fit: BoxFit.contain,
             ),
           ),
           const SizedBox(width: 12),
@@ -454,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {}, // Bisa diarahkan ke BookingScreen juga
+                  onPressed: () {},
                   child: const Text(
                     "Booking Sekarang!",
                     style: TextStyle(fontSize: 12),

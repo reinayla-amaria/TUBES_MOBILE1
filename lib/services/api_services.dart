@@ -1,40 +1,21 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/court_model.dart';
-import '../models/booking_models.dart'; // Pastikan model ini sudah dibuat
+import '../models/booking_models.dart';
 
 class ApiService {
-  // Ganti IP ini sesuai dengan IP Laptop Anda (cek 'ipconfig')
-  static const String baseUrl = 'http://192.168.1.91/api_tubes';
+  final SupabaseClient supabase = Supabase.instance.client;
 
-  // ---------------------------------------------------------------------------
-  // 1. GET DAFTAR LAPANGAN (Untuk Home Screen)
-  // ---------------------------------------------------------------------------
   Future<List<Court>> getCourts() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/get_courts.php'));
+      final data = await supabase.from('courts').select();
 
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> jsonResponse = json.decode(response.body);
-
-        if (jsonResponse['success'] == true) {
-          final List<dynamic> data = jsonResponse['data'];
-          return data.map((json) => Court.fromJson(json)).toList();
-        } else {
-          return [];
-        }
-      } else {
-        throw Exception('Gagal memuat data lapangan');
-      }
+      return (data as List).map((json) => Court.fromJson(json)).toList();
     } catch (e) {
-      print("Error Get Courts: $e");
-      throw Exception('Error Network: $e');
+      print("Error Supabase Courts: $e");
+      return [];
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 2. POST BOOKING (Untuk Booking Screen)
-  // ---------------------------------------------------------------------------
   Future<bool> createBooking(
     String courtId,
     String date,
@@ -43,93 +24,46 @@ class ApiService {
     double totalPrice,
   ) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/create_booking.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'court_id': courtId,
-          'date': date,
-          'time': time,
-          'duration': duration,
-          'total_price': totalPrice,
-          'user_id':
-              '1', // Nanti ganti dengan ID dinamis dari SharedPreferences
-        }),
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final jsonResponse = json.decode(response.body);
-        return jsonResponse['success'] == true;
-      } else {
-        return false;
-      }
+      await supabase.from('bookings').insert({
+        'user_id':
+            'user_id_sementara', 
+        'court_id': int.parse(courtId),
+        'date': date,
+        'time': time,
+        'duration': duration,
+        'total_price': totalPrice,
+        'status': 'Pending',
+      });
+      return true;
     } catch (e) {
-      print("Error Posting Booking: $e");
+      print("Error Supabase Booking: $e");
       return false;
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // 3. GET RIWAYAT BOOKING (Untuk Menu Jadwal di Home)
-  // ---------------------------------------------------------------------------
   Future<List<Booking>> getBookings(String userId) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/get_history.php?user_id=$userId'),
-      );
+      final data = await supabase
+          .from('bookings')
+          .select('*, courts(name)')
 
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        // Cek struktur JSON dari get_history.php Anda
-        // Jika formatnya { "success": true, "data": [...] }
-        if (jsonResponse is Map && jsonResponse['success'] == true) {
-          final List<dynamic> data = jsonResponse['data'];
-          return data.map((json) => Booking.fromJson(json)).toList();
-        }
-        // Jika formatnya langsung List [...]
-        else if (jsonResponse is List) {
-          return jsonResponse.map((json) => Booking.fromJson(json)).toList();
-        }
-        return [];
-      } else {
-        return [];
-      }
+          .order('created_at', ascending: false);
+
+      return (data as List).map((json) {
+        return Booking(
+          id: json['id'].toString(),
+          courtName: json['courts'] != null
+              ? json['courts']['name']
+              : 'Lapangan',
+          date: json['date'],
+          time: json['time'],
+          status: json['status'],
+          totalPrice: (json['total_price'] as num).toDouble(),
+        );
+      }).toList();
     } catch (e) {
-      print("Error Get Bookings: $e");
+      print("Error History: $e");
       return [];
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // 4. UPDATE PROFILE (Untuk Profile Screen)
-  // ---------------------------------------------------------------------------
-  Future<bool> updateProfile(
-    String userId,
-    String name,
-    String email,
-    String phone,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/update_profile.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'user_id': userId,
-          'name': name,
-          'email': email,
-          'phone': phone,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final jsonResponse = json.decode(response.body);
-        return jsonResponse['success'] == true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      print("Error Update Profile: $e");
-      return false;
     }
   }
 }

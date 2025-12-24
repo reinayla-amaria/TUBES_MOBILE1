@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-// Ganti import ini sesuai lokasi file login_screen.dart Anda nanti
 import 'auth/login_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -7,13 +6,11 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Warna utama aplikasi (Biru Lapangin)
     const primaryColor = Color(0xFF1565C0);
     const textColor = Color(0xFF2C3E50);
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // AppBar transparan untuk tombol "Skip"
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -74,8 +71,7 @@ class OnboardingScreen extends StatelessWidget {
 
             const Spacer(flex: 3),
 
-            // 4. Indikator Halaman (Titik-titik)
-            // Ini statis, jika ingin slide bisa pakai PageView
+
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -86,7 +82,6 @@ class OnboardingScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // 5. Tombol Get Started
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -95,7 +90,7 @@ class OnboardingScreen extends StatelessWidget {
                   backgroundColor: primaryColor,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16), // Sudut membulat
+                    borderRadius: BorderRadius.circular(16),
                   ),
                   elevation: 3,
                   shadowColor: primaryColor.withOpacity(0.5),
@@ -107,14 +102,13 @@ class OnboardingScreen extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 30), // Padding bawah
+            const SizedBox(height: 30), 
           ],
         ),
       ),
     );
   }
 
-  // Fungsi helper untuk navigasi ke Login
   void _navigateToLogin(BuildContext context) {
     Navigator.pushReplacement(
       context,
@@ -122,13 +116,12 @@ class OnboardingScreen extends StatelessWidget {
     );
   }
 
-  // Widget kecil untuk membuat titik indikator
   Widget _buildDot({required bool isActive, required Color color}) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       margin: const EdgeInsets.symmetric(horizontal: 4),
       height: 8,
-      width: isActive ? 24 : 8, // Jika aktif lebih lebar
+      width: isActive ? 24 : 8, 
       decoration: BoxDecoration(
         color: isActive ? color : Colors.grey[300],
         borderRadius: BorderRadius.circular(4),

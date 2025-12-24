@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart';
-import 'booking_screen.dart'; // Halaman Pilih Venue (Daftar Lapangan)
+import 'booking_screen.dart'; 
 import 'chat_screen.dart';
 import 'profile_screen.dart';
 
@@ -28,7 +28,6 @@ class _MainNavScreenState extends State<MainNavScreen> {
     return Scaffold(
       body: _pages[_selectedIndex],
 
-      // Navigasi Bawah
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: primaryBlue,
@@ -43,12 +42,12 @@ class _MainNavScreenState extends State<MainNavScreen> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white60,
-          showSelectedLabels: false, // Sesuai desain (tanpa label teks)
+          showSelectedLabels: false, 
           showUnselectedLabels: false,
           currentIndex: _selectedIndex,
           onTap: (index) {
             setState(() {
-              _selectedIndex = index; // Ganti halaman saat icon diklik
+              _selectedIndex = index; 
             });
           },
           items: const [

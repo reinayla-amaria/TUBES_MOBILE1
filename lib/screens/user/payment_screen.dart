@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../models/court_model.dart';
-import 'main_nav_screen.dart'; // Navigasi kembali ke menu utama setelah bayar
+import 'main_nav_screen.dart'; 
 
 class PaymentScreen extends StatefulWidget {
   final String bookingId;
@@ -24,9 +24,8 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  int _selectedMethod = -1; // -1 artinya belum ada metode yang dipilih
+  int _selectedMethod = -1;
 
-  // Data Dummy Metode Pembayaran
   final List<Map<String, dynamic>> _paymentMethods = [
     {'id': 0, 'name': 'BCA Virtual Account', 'icon': Icons.credit_card},
     {'id': 1, 'name': 'BRI Virtual Account', 'icon': Icons.credit_card},
@@ -89,7 +88,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
             ),
           ),
 
-          // 2. KONTEN SCROLLABLE
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -102,7 +100,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // --- KARTU RINGKASAN ---
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
@@ -148,7 +145,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                   const SizedBox(height: 15),
 
-                  // --- LIST METODE PEMBAYARAN ---
                   ..._paymentMethods.map((method) {
                     bool isSelected = _selectedMethod == method['id'];
                     return GestureDetector(
@@ -207,7 +203,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
                   const SizedBox(height: 30),
 
-                  // --- TOMBOL BAYAR ---
                   SizedBox(
                     width: double.infinity,
                     height: 55,
@@ -226,7 +221,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
                           ? () {
                               _showSuccessDialog();
                             }
-                          : null, // Disable jika belum pilih metode
+                          : null, 
                       child: const Text(
                         "Bayar Sekarang",
                         style: TextStyle(
@@ -245,7 +240,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // Widget Helper: Baris Ringkasan
   Widget _buildSummaryRow(
     String label,
     String value, {
@@ -269,7 +263,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
     );
   }
 
-  // Fungsi Dialog Sukses
   void _showSuccessDialog() {
     showDialog(
       context: context,
@@ -312,7 +305,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                   ),
                 ),
                 onPressed: () {
-                  // Kembali ke MainNavScreen (Hapus history navigasi agar tidak bisa back ke payment)
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(
                       builder: (context) => const MainNavScreen(),
